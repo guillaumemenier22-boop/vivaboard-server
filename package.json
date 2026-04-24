@@ -1,0 +1,43 @@
+{
+  "name": "vivaboard",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "build-portable": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "com.vivaboard.app",
+    "productName": "Vivaboard",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "widget-preload.js",
+      "server-local.js",
+      "vivaboard.html",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "icon.ico"
+    },
+    "portable": {
+      "artifactName": "Vivaboard.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.16.0"
+  }
+}
