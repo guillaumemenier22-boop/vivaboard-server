@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>Vivaboard — Élève</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f0ec;color:#1a1a2e;min-height:100vh;display:flex;flex-direction:column}
+#join-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:24px;gap:16px}
+.logo{font-size:32px;font-weight:900}.logo span{color:#f5c842}
+.card{background:white;border-radius:16px;padding:24px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,.1)}
+.card h2{font-size:14px;font-weight:800;margin-bottom:16px;color:#5a5a72;text-transform:uppercase;letter-spacing:.06em}
+input{width:100%;padding:14px;border-radius:10px;border:2px solid #e8e8e2;font-size:18px;font-family:inherit;outline:none;margin-bottom:10px;text-align:center;letter-spacing:3px;transition:border-color .15s}
+input.nom{letter-spacing:normal;text-align:left;font-size:16px}
+input:focus{border-color:#f5c842}
+.btn{width:100%;padding:16px;border-radius:10px;border:none;background:#f5c842;color:#1a1200;font-size:17px;font-weight:900;cursor:pointer;font-family:inherit}
+.btn:active{opacity:.8}
+.erreur{color:#e84040;font-size:13px;font-weight:700;text-align:center;min-height:20px;padding:4px}
+#loading-screen{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:16px;padding:24px}
+.spinner{width:44px;height:44px;border:4px solid #e8e8e2;border-top-color:#f5c842;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-msg{font-size:15px;font-weight:700;color:#5a5a72;text-align:center}
+#groupe-screen{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:24px;gap:12px}
+.groupe-btn{width:100%;max-width:380px;padding:18px;border-radius:12px;border:3px solid;background:transparent;font-size:17px;font-weight:900;cursor:pointer;font-family:inherit}
+.groupe-btn:active{opacity:.75;transform:scale(.97)}
+#eleve-screen{display:none;flex-direction:column;flex:1;min-height:0}
+#eleve-header{background:white;padding:12px 18px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 8px rgba(0,0,0,.08);flex-shrink:0}
+.nom-badge{font-size:14px;font-weight:800}
+.grp-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:900;display:none}
+.spacer{flex:1}
+#conn-dot{width:9px;height:9px;border-radius:50%;background:#2ee8a8;flex-shrink:0}
+.tabs{display:flex;border-bottom:2px solid #e8e8e2;flex-shrink:0;background:white}
+.tab-btn{flex:1;padding:12px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:800;color:#9a9aa0;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab-btn.active{color:#1a1a2e;border-bottom-color:#f5c842}
+.tab-content{display:none;flex:1;flex-direction:column;min-height:0;overflow-y:auto}
+.tab-content.active{display:flex}
+#tab-travail{padding:16px;gap:10px}
+.attente{text-align:center;color:#9a9aa0;padding:40px 20px}
+.attente-icon{font-size:52px;margin-bottom:12px}
+.attente-txt{font-size:16px;font-weight:700}
+
+/* Carte activité */
+.act-card{background:white;border-radius:14px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.07);flex-shrink:0}
+.act-card-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.act-card-titre{font-size:13px;font-weight:900;color:#5a5a72;text-transform:uppercase;letter-spacing:.06em;flex:1}
+.fini-badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:900;background:#e8e8e2;color:#9a9aa0}
+.fini-badge.done{background:rgba(46,232,168,.2);color:#0a6040}
+.act-consigne{font-size:18px;font-weight:700;line-height:1.6;color:#1a1a2e;white-space:pre-wrap;margin-bottom:14px}
+.fini-btn-card{width:100%;padding:14px;border-radius:10px;border:none;background:#2ee8a8;color:#0a3020;font-size:16px;font-weight:900;cursor:pointer;font-family:inherit;transition:all .2s}
+.fini-btn-card.done{background:#e8e8e2;color:#9a9aa0}
+.fini-btn-card:active:not(.done){transform:scale(.97)}
+
+.media-card{background:white;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07);flex-shrink:0}
+.media-card img,.media-card video{width:100%;display:block;max-height:50vh;object-fit:contain}
+#tab-tableau{padding:0;align-items:center;justify-content:center;background:#1a1a2e}
+#screen-img{width:100%;height:100%;object-fit:contain;display:none}
+#screen-attente{color:#5a5a72;font-size:15px;font-weight:700;text-align:center;padding:40px}
+</style>
+</head>
+<body>
+
+<div id="join-screen">
+  <div class="logo">Viva<span>Board</span></div>
+  <div class="card">
+    <h2>Rejoindre la classe</h2>
+    <input id="inp-code" placeholder="Code à 4 chiffres" maxlength="4" inputmode="numeric" autocomplete="off">
+    <input id="inp-nom" class="nom" placeholder="Ton prénom" autocomplete="off">
+    <div class="erreur" id="join-err"></div>
+    <button class="btn" onclick="doJoin()">Rejoindre →</button>
+  </div>
+</div>
+
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-msg" id="loading-msg">Connexion…</div>
+</div>
+
+<div id="groupe-screen">
+  <div class="logo" style="margin-bottom:8px">Viva<span>Board</span></div>
+  <div style="font-size:16px;font-weight:800;color:#5a5a72;margin-bottom:8px">Dans quel groupe es-tu ?</div>
+  <div id="groupes-list" style="width:100%;max-width:380px"></div>
+</div>
+
+<div id="eleve-screen">
+  <div id="eleve-header">
+    <div id="conn-dot"></div>
+    <div class="nom-badge" id="disp-nom"></div>
+    <div class="grp-badge" id="disp-grp"></div>
+    <div class="spacer"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('travail',this)">📋 Travail</button>
+    <button class="tab-btn" onclick="switchTab('tableau',this)">🖥 Tableau</button>
+  </div>
+  <div class="tab-content active" id="tab-travail">
+    <div class="attente" id="attente">
+      <div class="attente-icon">⏳</div>
+      <div class="attente-txt">En attente de l'enseignant…</div>
+    </div>
+  </div>
+  <div class="tab-content" id="tab-tableau">
+    <div id="screen-attente">🖥 Partage d'écran non actif</div>
+    <img id="screen-img" alt="Tableau">
+  </div>
+</div>
+
+<script>
+const SERVER_WS=location.protocol==='https:'?'wss://'+location.host:'ws://'+location.host;
+let ws=null,eleveId=null,monNom='',monGroupe=null,groupesDispos=[],retryCount=0;
+// Map actId → {card, btnFini, fini}
+const activites=new Map();
+let actCounter=0;
+
+function show(id){
+  ['join-screen','loading-screen','groupe-screen','eleve-screen'].forEach(s=>{
+    document.getElementById(s).style.display=s===id?'flex':'none';
+  });
+}
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function doJoin(){
+  const code=document.getElementById('inp-code').value.trim();
+  const nom=document.getElementById('inp-nom').value.trim();
+  const err=document.getElementById('join-err');
+  if(!/^\d{4}$/.test(code)){err.textContent='Code à 4 chiffres';return;}
+  if(!nom){err.textContent='Entre ton prénom';return;}
+  err.textContent='';monNom=nom;retryCount=0;connectWS(code,nom);
+}
+
+function connectWS(code,nom){
+  show('loading-screen');
+  document.getElementById('loading-msg').textContent=retryCount===0?'Connexion…':`Tentative ${retryCount}/5…`;
+  ws=new WebSocket(SERVER_WS);
+  ws.onopen=()=>ws.send(JSON.stringify({type:'eleve_join',code,nom}));
+  ws.onmessage=(e)=>{let msg;try{msg=JSON.parse(e.data);}catch{return;}handleMsg(msg,code,nom);};
+  ws.onerror=()=>{};
+  ws.onclose=()=>{
+    document.getElementById('conn-dot').style.background='#ff6b6b';
+    if(retryCount<5){retryCount++;setTimeout(()=>connectWS(code,nom),retryCount*2000);}
+    else{show('join-screen');document.getElementById('join-err').textContent='Impossible de se connecter.';}
+  };
+}
+
+function handleMsg(msg,code,nom){
+  if(msg.type==='erreur'){show('join-screen');document.getElementById('join-err').textContent=msg.message;return;}
+  if(msg.type==='join_ok'){eleveId=msg.eleveId;groupesDispos=msg.groupes||[];groupesDispos.length>0?showGroupeScreen():showEleveScreen(null);return;}
+  if(msg.type==='activite'){ajouterActivite(msg);return;}
+  if(msg.type==='media'){afficherMedia(msg);return;}
+  if(msg.type==='screen_share'){afficherScreen(msg.data);return;}
+  if(msg.type==='screen_share_stop'){stopScreen();return;}
+  if(msg.type==='salle_fermee'){document.getElementById('conn-dot').style.background='#ff6b6b';return;}
+}
+
+function showGroupeScreen(){
+  const list=document.getElementById('groupes-list');list.innerHTML='';
+  groupesDispos.forEach(g=>{
+    const btn=document.createElement('button');btn.className='groupe-btn';
+    btn.style.borderColor=g.color;btn.style.color=g.color;btn.textContent=g.name;
+    btn.onclick=()=>{monGroupe=g.name;ws.send(JSON.stringify({type:'set_groupe',groupe:g.name}));showEleveScreen(g);};
+    list.appendChild(btn);
+  });
+  show('groupe-screen');
+}
+
+function showEleveScreen(groupe){
+  document.getElementById('disp-nom').textContent='👤 '+monNom;
+  const badge=document.getElementById('disp-grp');
+  if(groupe){badge.textContent=groupe.name;badge.style.background=groupe.color+'28';badge.style.color=groupe.color;badge.style.border='1.5px solid '+groupe.color;badge.style.display='block';}
+  document.getElementById('conn-dot').style.background='#2ee8a8';
+  show('eleve-screen');
+}
+
+// Point 2 : accumulation des activités
+function ajouterActivite(msg){
+  document.getElementById('attente').style.display='none';
+  const body=document.getElementById('tab-travail');
+  actCounter++;
+  const actId='act-'+actCounter;
+
+  const card=document.createElement('div');
+  card.className='act-card';
+  card.id=actId;
+  card.innerHTML=`
+    <div class="act-card-header">
+      <div class="act-card-titre">📋 ${msg.titre||'Activité'}</div>
+      <div class="fini-badge" id="${actId}-badge">En cours</div>
+    </div>
+    <div class="act-consigne">${msg.consigne||''}</div>
+    <button class="fini-btn-card" id="${actId}-btn" onclick="signalerFini('${actId}','${(msg.titre||'Activité').replace(/'/g,"\\'")}')">
+      ✅ J'ai fini !
+    </button>`;
+  body.appendChild(card);
+  activites.set(actId,{titre:msg.titre||'Activité',fini:false});
+
+  // Scroll vers la nouvelle activité
+  card.scrollIntoView({behavior:'smooth',block:'end'});
+  // Switcher sur travail
+  document.querySelectorAll('.tab-btn')[0].click();
+}
+
+// Point 3 : signaler fin avec l'id de l'activité
+function signalerFini(actId, titreAct){
+  const act=activites.get(actId);
+  if(!act||act.fini) return;
+  act.fini=true;
+  const btn=document.getElementById(actId+'-btn');
+  const badge=document.getElementById(actId+'-badge');
+  if(btn){btn.classList.add('done');btn.textContent='✔ Terminé !';}
+  if(badge){badge.classList.add('done');badge.textContent='✅ Terminé';}
+  if(ws&&ws.readyState===WebSocket.OPEN){
+    ws.send(JSON.stringify({type:'j_ai_fini',activiteId:actId,titre:titreAct}));
+  }
+}
+
+function afficherMedia(msg){
+  const body=document.getElementById('tab-travail');
+  body.querySelectorAll('.media-card').forEach(c=>c.remove());
+  const card=document.createElement('div');card.className='media-card';
+  if(msg.mediaType==='image') card.innerHTML=`<img src="${msg.url}">`;
+  else if(msg.mediaType==='video') card.innerHTML=`<video controls src="${msg.url}" playsinline></video>`;
+  body.appendChild(card);
+}
+function afficherScreen(data){
+  document.getElementById('screen-attente').style.display='none';
+  const img=document.getElementById('screen-img');img.src=data;img.style.display='block';
+}
+function stopScreen(){
+  document.getElementById('screen-img').style.display='none';
+  document.getElementById('screen-attente').style.display='block';
+}
+
+document.getElementById('inp-code').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('inp-nom').focus();});
+document.getElementById('inp-nom').addEventListener('keydown',e=>{if(e.key==='Enter')doJoin();});
+</script>
+</body>
+</html>
